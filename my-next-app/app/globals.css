@@ -42,9 +42,9 @@ a {
 }
 
 .box {
-  padding: 8;
+  padding: 8px;
   boder: 2px solid black;
-  border-radius: 8;
+  border-radius: 8px;
 }
 
 .layout {
@@ -53,7 +53,7 @@ a {
 
 .template {
   background-color: #00A2C7;
-
+}
 
 .slot-default {
   background-color: lightgray;
@@ -69,5 +69,5 @@ background-color: #bdee63
 }
 
 .page {
-  background-color: #f76b15;
+  background-color: #f76b15
 }
