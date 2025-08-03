@@ -10,6 +10,9 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     return {
         title: `Title Post ID ${postId}`,
         description: `Description Post ID ${postId}`,
+        openGraph: {
+            images: [`/api/og?title=${`Post ID ${postId}`}`],
+        }
     };
 }
 
