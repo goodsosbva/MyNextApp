@@ -1,17 +1,30 @@
+'use client'
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link'
 
-
 function FeedPage() {
+    const  [posts, setPosts] = useState<MyNextApp.Posts[]>([]);
+
+    useEffect(() => {
+        async function fetchPosts() {
+            const data = await fetch('/api/posts').then(res => res.json());
+            setPosts(data);
+        }
+
+        fetchPosts();
+    },  [])
+
     return (
         <div className="box page">
             <h4>Page</h4>
             <ul style={{ listStylePosition: 'inside' }}>
-                {[...new Array(10)].map((item, index) => {
+                {posts.map((posts, index) => {
                     const postId = index + 1;
                     return (
                         <li key={index}>
                             <Link href={`/posts/${postId}`}>
-                                {`Post item ${postId}`}
+                                {posts.title}
                             </Link>
                         </li>
                     )
