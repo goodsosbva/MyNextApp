@@ -7,9 +7,13 @@ export async function GET (request: NextRequest) {
         return NextResponse.json('Missing title', { status: 400 });
     }
 
+    console.error('OG Image requested with params:', request.nextUrl.searchParams.toString());
+    console.error('Request URL:', request.url);
+
     return new ImageResponse(
         (
             <div
+
                 style={{
                     width: '100%',
                     height: '100%',
