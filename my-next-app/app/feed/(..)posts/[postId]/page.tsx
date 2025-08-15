@@ -1,3 +1,5 @@
+import PostFragment from "@/components/PostFragment";
+
 interface PageProps {
     params: Promise<{ postId: string }>;
 }
@@ -8,6 +10,7 @@ async function PostItemPage(props: PageProps) {
     return (
         <div className="box page">
             <p>Intercepted PostItemPage: {postId}</p>
+            <PostFragment postId={postId} />
         </div>
     );
 }

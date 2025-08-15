@@ -1,35 +1,17 @@
-'use client'
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link'
+import { Suspense } from 'react';
+import PostList from '@/components/PostList';
+import { readPostsAction } from '@/lib/actions/posts';
 
 function FeedPage() {
-    const  [posts, setPosts] = useState<MyNextApp.Posts[]>([]);
-
-    useEffect(() => {
-        async function fetchPosts() {
-            const data = await fetch('/api/posts').then(res => res.json());
-            setPosts(data);
-        }
-
-        fetchPosts();
-    },  [])
+    const postsPromise = readPostsAction();
 
     return (
         <div className="box page">
             <h4>Page</h4>
-            <ul style={{ listStylePosition: 'inside' }}>
-                {posts.map((posts, index) => {
-                    const postId = index + 1;
-                    return (
-                        <li key={index}>
-                            <Link href={`/posts/${postId}`}>
-                                {posts.title}
-                            </Link>
-                        </li>
-                    )
-                })}
-            </ul>
+            <Suspense fallback={<div>Loading...</div>}>
+                <PostList postsPromise={postsPromise} />
+            </Suspense>
         </div>
     )
 }
