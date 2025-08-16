@@ -4,7 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 
 interface PostListProps {
-    postsPromise: Promise<MyNextApp.Posts[]>;
+    postsPromise: Promise<MyNextApp.Post[]>;
 }
 
 function PostList(props: PostListProps) {
