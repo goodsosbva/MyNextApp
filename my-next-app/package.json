@@ -7,11 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:update-snapshots": "playwright test --update-snapshots",
-    "test:e2e:codegen": "playwright codegen localhost:3000",
     "test": "jest"
   },
   "dependencies": {
@@ -23,7 +18,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@playwright/test": "^1.54.2",
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
@@ -39,3 +34,5 @@
     "typescript": "^5"
   }
 }
+
+
