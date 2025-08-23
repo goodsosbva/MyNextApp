@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const notoSanKR = Noto_Sans_KR({
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700'],
+    display: 'swap',
+}); 
 
 export const metadata: Metadata = {
   title: "My Next App",
@@ -30,18 +26,17 @@ export default function RootLayout(props: Readonly<RootLayoutProps>) {
   return (
     <html lang="en">
       <body
-          style={{ maxWidth: 480, margin: 'auto'}}
-          className={`${geistSans.variable} ${geistMono.variable}`}>
-          <nav style={{ padding: '16px 0px', display: 'flex', gap: 16}}>
+          className={`max-w-[480px] m-auto ${notoSanKR.className}`}>
+          <nav className='py-4 flex gap-4'>
             <Link href="/">Home</Link>
             <Link href="/feed">Feed</Link>
             <Link href="/search">Search</Link>
             <Link href="/settings">settings</Link>
           </nav>
-          <div style={{ display: 'flex', gap: 16 }}>
-            <main style={{ flex: 1 }}>{children}</main>
+          <div className='flex gap-4'>
+            <main className='flex-2'>{children}</main>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className='flex-1 flex flex-col gap-4'>
               {trends}
               {users}
             </div>

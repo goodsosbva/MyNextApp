@@ -1,4 +1,7 @@
-:root {
+@import "tailwindcss";
+
+
+/* :root {
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -41,6 +44,9 @@ a {
   }
 }
 
+*/
+
+
 .box {
   padding: 8px;
   boder: 2px solid black;
@@ -70,4 +76,4 @@ background-color: #bdee63
 
 .page {
   background-color: #f76b15
-}
+} 

@@ -1,5 +1,5 @@
 declare namespace MyNextApp {
-    type Posts = {
+    type Post = {
         id: string;
         title: string;
         content: string;

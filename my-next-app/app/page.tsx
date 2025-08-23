@@ -1,7 +1,7 @@
 function IndexPage() {
     return (
         <div className="box page">
-           Index Page
+           <h1>Index Page</h1>
         </div>
     );
 }
