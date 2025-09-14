@@ -538,7 +538,8 @@ async function Page(props: PageProps) {
 
 ### 완성된 페이지 이미지
 
-image.png
+<img width="1387" height="830" alt="image" src="https://github.com/user-attachments/assets/7cf3ece2-8114-435c-beed-6bb932262ba0" />
+
 
 ### 다음 학습 목표
 
