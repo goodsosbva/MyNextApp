@@ -34,7 +34,8 @@ const selectPostBaseQuery = db
                 ELSE JSON_ARRAY()
             END
         `.mapWith(
-      (commentsJsonStr) => JSON.parse(commentsJsonStr) as "comments"
+      (commentsJsonStr) =>
+        JSON.parse(commentsJsonStr) as SelectUserPostComment[]
     ),
   })
   .from(userPostTable)

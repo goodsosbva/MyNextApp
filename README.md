@@ -126,7 +126,7 @@ npm run test:e2e     # E2E 테스트
 - TypeScript 5
 - Tailwind CSS 4
 - Drizzle ORM (데이터베이스 ORM)
-- SQLite (데이터베이스)
+- Turso (클라우드 SQLite)
 - NextAuth.js (인증)
 - Radix UI (UI 컴포넌트)
 - Lucide React (아이콘)
@@ -140,6 +140,7 @@ npm run test:e2e     # E2E 테스트
 - **인증 시스템**: NextAuth.js를 활용한 사용자 인증
 - **API 설계**: RESTful API 설계 및 구현
 - **컴포넌트 아키텍처**: 재사용 가능한 UI 컴포넌트 설계
+- **클라우드 데이터베이스**: Turso를 활용한 Edge 최적화
 
 **주요 기능**:
 
@@ -149,6 +150,7 @@ npm run test:e2e     # E2E 테스트
 - 🔐 JWT 기반 인증
 - 📊 복잡한 데이터 관계 처리
 - ⚡ 최적화된 데이터베이스 쿼리
+- 🌐 Edge 환경 최적화
 
 **데이터베이스 스키마**:
 
@@ -194,6 +196,287 @@ npm run dev          # 개발 서버
 npm run db:generate  # 데이터베이스 마이그레이션 생성
 npm run db:push      # 데이터베이스 스키마 적용
 ```
+
+---
+
+## 🏗️ 풀스택 아키텍처 완전 가이드
+
+### 데이터베이스 아키텍처와 내부 단계별 상세 설명
+
+#### 1. **프로젝트 초기화 단계**
+
+**의존성 설치 (`package.json`)**:
+
+```json
+{
+  "dependencies": {
+    "@libsql/client": "^0.8.1", // Turso 클라이언트 라이브러리
+    "drizzle-orm": "^0.32.1", // TypeScript ORM
+    "next-auth": "^4.24.11", // 인증 라이브러리
+    "nanoid": "^5.1.5" // 고유 ID 생성기
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.23.1" // 마이그레이션 도구
+  }
+}
+```
+
+**환경 변수 설정 (`.env`)**:
+
+```bash
+TURSO_CONNECTION_URL=libsql://your-database-url
+TURSO_AUTH_TOKEN=your-auth-token
+NEXTAUTH_SECRET=your-secret-key
+```
+
+#### 2. **데이터베이스 스키마 정의 단계**
+
+**스키마 파일 작성 (`database/schema.ts`)**:
+
+```typescript
+export const userTable = sqliteTable("user", {
+  id: text("id", { length: 21 })
+    .$defaultFn(() => nanoid(21)) // 21자리 고유 ID 자동 생성
+    .primaryKey(),
+  email: text("email").unique().notNull(),
+  password: text("password").notNull(),
+  name: text("name").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .$default(() => sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+});
+```
+
+**관계 정의**:
+
+```typescript
+export const userRelations = relations(userTable, ({ many }) => ({
+  posts: many(userPostTable), // 1:N 관계
+  comments: many(userPostCommentTable),
+}));
+```
+
+#### 3. **마이그레이션 생성 단계**
+
+**Drizzle Kit 설정 (`drizzle.config.ts`)**:
+
+```typescript
+export default defineConfig({
+  schema: "./database/schema.ts", // 스키마 파일 경로
+  out: "./database/migrations", // 마이그레이션 출력 위치
+  dialect: "sqlite", // SQLite 문법 사용
+  driver: "turso", // Turso 드라이버 사용
+});
+```
+
+**드라이버와 Turso 설명**:
+
+- **드라이버**: 데이터베이스와 통신하기 위한 중간 계층
+- **Turso**: SQLite 기반의 클라우드 데이터베이스 서비스
+  - Edge 환경에서 빠른 성능
+  - 서버리스 아키텍처에 최적화
+  - 전 세계 Edge 위치에서 데이터 복제
+
+#### 4. **데이터베이스 연결 설정 단계**
+
+**Turso 클라이언트 생성 (`database/db.ts`)**:
+
+```typescript
+const client = createClient({
+  url: process.env.TURSO_CONNECTION_URL!, // libsql://your-db.turso.io
+  authToken: process.env.TURSO_AUTH_TOKEN!, // JWT 토큰
+});
+export const db = drizzle(client);
+```
+
+#### 5. **Prepared Query 최적화 단계**
+
+**왜 `prepareQueries/post.ts`가 필요한가?**:
+
+- **성능 최적화**: 쿼리 컴파일을 한 번만 수행
+- **메모리 효율**: 동일한 쿼리 구조 재사용
+- **타입 안전성**: 한 번 정의하면 모든 곳에서 타입 보장
+- **유지보수성**: 복잡한 쿼리 로직을 한 곳에서 관리
+
+**Prepared Query 예시**:
+
+```typescript
+const selectPostBaseQuery = db
+  .select({
+    id: userPostTable.id,
+    title: userPostTable.title,
+    user: {
+      id: userTable.id,
+      name: userTable.name,
+    },
+    comments: sql<SelectUserPostComment[]>`
+      CASE
+        WHEN ${userPostCommentTable.id} IS NOT NULL
+        THEN JSON_GROUP_ARRAY(JSON_OBJECT(...))
+        ELSE JSON_ARRAY()
+      END
+    `.mapWith(
+      (commentsJsonStr) =>
+        JSON.parse(commentsJsonStr) as SelectUserPostComment[]
+    ),
+  })
+  .from(userPostTable)
+  .innerJoin(userTable, eq(userTable.id, userPostTable.userId))
+  .leftJoin(
+    userPostCommentTable,
+    eq(userPostCommentTable.postId, userPostTable.id)
+  )
+  .groupBy(userPostTable.id);
+```
+
+#### 6. **실제 사용자 상호작용부터 API 처리까지의 전체 흐름**
+
+**1단계: 사용자 입력 (SignUpPage 컴포넌트)**
+
+```typescript
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const { email, password, name } = formData;
+  const response = await signUp(email, password, name);
+};
+```
+
+**2단계: API Manager 호출 (lib/apiManager.ts)**
+
+```typescript
+export function signUp(email: string, password: string, name: string) {
+  const params = { email, password, name };
+  return fetch("/api/sign-up", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+}
+```
+
+**3단계: API Route 처리 (app/api/sign-up/route.ts)**
+
+```typescript
+export async function POST(req: Request) {
+  const { email, password, name } = await req.json();
+
+  const result = await db.transaction(async (tx) => {
+    const [existingUser] = await tx
+      .select()
+      .from(userTable)
+      .where(eq(userTable.email, email));
+
+    if (existingUser) {
+      throw new Error("이미 존재하는 이메일입니다.");
+    }
+
+    return await tx
+      .insert(userTable)
+      .values({ email, password, name })
+      .returning();
+  });
+
+  return Response.json(result, { status: 200 });
+}
+```
+
+**4단계: Drizzle ORM 자동 처리 과정**
+
+1. **TypeScript 쿼리 분석** → SQL 변환
+2. **SQL 생성** → `SELECT * FROM user WHERE email = ?`
+3. **Turso 클라이언트 호출** → 데이터베이스에 전송
+4. **SQLite 실행** → 쿼리 실행
+5. **결과 변환** → TypeScript 객체로 변환
+
+#### 7. **Server Component 데이터 처리 단계**
+
+**페이지 컴포넌트 (`app/posts/[postId]/page.tsx`)**:
+
+```typescript
+async function Page(props: PageProps) {
+  const session = await getServerSession(authOptions);
+  const { params } = props;
+  const postId = (await params).postId;
+
+  const [post] = await preparedPostQuery.execute({ postId });
+
+  if (!post) {
+    return notFound();
+  }
+
+  return (
+    <SessionProviderWrapper session={session}>
+      <PostViewPage post={post} />
+    </SessionProviderWrapper>
+  );
+}
+```
+
+### 전체 데이터 흐름 요약
+
+```
+1. 프로젝트 초기화
+   ├── package.json 의존성 설치
+   ├── .env 환경 변수 설정
+   └── TypeScript 설정
+
+2. 데이터베이스 스키마 정의
+   ├── schema.ts 테이블 정의
+   ├── 관계 설정
+   └── 타입 추론
+
+3. 마이그레이션 생성
+   ├── drizzle-kit generate
+   ├── SQL 파일 생성
+   └── 메타데이터 기록
+
+4. 데이터베이스 연결
+   ├── Turso 클라이언트 생성 (libsql 프로토콜)
+   ├── 마이그레이션 적용
+   └── 테이블 생성
+
+5. Prepared Query 최적화
+   ├── 복잡한 JOIN 쿼리 작성
+   ├── JSON 그룹화
+   └── Prepared Statement 생성
+
+6. 실제 사용자 상호작용
+   ├── 사용자 입력 (SignUpPage 컴포넌트)
+   ├── API Manager 호출 (lib/apiManager.ts)
+   ├── API Route 처리 (app/api/sign-up/route.ts)
+   ├── Drizzle ORM 자동 처리 (TypeScript → SQL → 결과)
+   ├── 데이터베이스 실행 (Turso + SQLite)
+   └── 응답 처리 (클라이언트)
+
+7. Server Component 처리
+   ├── 서버 사이드 실행
+   ├── 데이터 조회
+   └── HTML 생성
+
+8. 클라이언트 렌더링
+   ├── 하이드레이션
+   ├── 상태 관리
+   └── 사용자 상호작용
+```
+
+### 핵심 포인트
+
+**우리가 설정하는 것**:
+
+- 데이터베이스 연결 정보 (`database/db.ts`)
+- 스키마 정의 (`database/schema.ts`)
+- 쿼리 작성 (Prepared Query)
+
+**라이브러리가 자동 처리하는 것**:
+
+- TypeScript → SQL 변환
+- SQL 실행 및 결과 반환
+- 타입 변환 및 타입 안전성 보장
+
+이 모든 단계가 조화롭게 작동하여 **타입 안전하고 성능이 최적화된 풀스택 웹 애플리케이션**을 만들어냅니다!
 
 ---
 
@@ -252,6 +535,10 @@ npm run db:push      # 데이터베이스 스키마 적용
 - ✅ JSON_GROUP_ARRAY를 활용한 댓글 그룹화
 - ✅ API 라우트 설계 및 에러 처리
 - ✅ 문법 오류 수정 및 코드 최적화
+
+### 완성된 페이지 이미지
+
+image.png
 
 ### 다음 학습 목표
 
