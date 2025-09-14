@@ -536,6 +536,10 @@ async function Page(props: PageProps) {
 - ✅ API 라우트 설계 및 에러 처리
 - ✅ 문법 오류 수정 및 코드 최적화
 
+### 완성된 페이지 이미지
+
+image.png
+
 ### 다음 학습 목표
 
 - [ ] 프론트엔드 UI 컴포넌트 구현

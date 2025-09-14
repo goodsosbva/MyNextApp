@@ -26,9 +26,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={cn('min-h-screen bg-background', `${geistSans.variable} ${geistMono.variable} antialiased`)}
+        className={cn(
+          "min-h-screen bg-background",
+          `${geistSans.variable} ${geistMono.variable} antialiased`
+        )}
       >
-        <main className="m-auto pt-20 max-w-lg">{children}</main>
+        <main className="min-h-screen">{children}</main>
       </body>
     </html>
   );
